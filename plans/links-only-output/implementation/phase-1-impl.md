@@ -76,14 +76,20 @@ Because links-only has explicit gated behavior for single-doc, multi-doc, `--jso
 ### Step 5: Expand CLI tests for links-only behavior
 
 - **What**: Add tests in `tests/test_cli.py` for:
-  1. parser accepts `--links-only`;
-  2. parser rejects `--links-only --remove-links`;
-  3. single-doc markdown links-only output;
-  4. single-doc JSON links-only output (pure array);
-  5. multi-doc links-only output with per-URL sectioning;
-  6. zero-reference fallback message.
+  1. parser accepts `--links-only` and exposes `args.links_only`;
+  2. parser rejects `--links-only --remove-links` (mutual exclusion);
+  3. `crawl --help` output includes `--links-only` flag description;
+  4. single-doc markdown links-only output (stdout);
+  5. single-doc markdown links-only output with `-o <file>`;
+  6. single-doc JSON links-only output (pure array, stdout);
+  7. multi-doc links-only output with per-URL sectioning (stdout);
+  8. multi-doc links-only combined output with `-o <file>`;
+  9. multi-doc links-only per-URL files with `-o <dir>`;
+  10. `--site --links-only` multi-doc output (verifies site crawl mode compatibility);
+  11. zero-reference fallback message (`No references found for <url>`);
+  12. zero-reference JSON output (empty array `[]`).
 - **Where**: `tests/test_cli.py` (`:24-170` existing baseline).
-- **Why**: These are explicit phase deliverables and guard against regression in output routing.
+- **Why**: These are explicit phase deliverables and guard against regression in output routing. Destination variants (`-o file`, `-o dir`) and `--site` combination are required by phase acceptance criteria.
 - **Considerations**: Reuse existing test style with lightweight document doubles (`SimpleNamespace`), `capsys` for stdout assertions, and `tmp_path` for `-o` path assertions; do not weaken or remove existing dedup/auth tests.
 
 ## Testing Plan
@@ -92,17 +98,33 @@ Primary verify command:
 
 `python -m pytest tests/test_cli.py -v`
 
+Post-pytest smoke test (manual, run after unit tests pass):
+
+```bash
+crawl https://example.com --links-only
+crawl https://example.com --links-only --json
+crawl https://example.com https://example.org --links-only
+```
+
 | Test Type | What to Test | Expected Outcome |
 |-----------|-------------|-----------------|
 | Parser unit | `--links-only` is parsed and exposed as `args.links_only`; `--links-only --remove-links` exits with argparse error | Parser succeeds for valid flag and rejects invalid combination with `SystemExit` error path |
-| Output unit (markdown) | `_write_output()` links-only single + multi-doc markdown rendering, including zero-reference message | Output contains only reference lines (`[N] label - href`) and `No references found for <url>` when references are empty |
+| Parser unit | `crawl --help` includes `--links-only` in output | Help text mentions `--links-only` flag and its purpose |
+| Output unit (markdown, stdout) | `_write_output()` links-only single-doc markdown rendering to stdout | Output contains only reference lines (`[N] label - href`) |
+| Output unit (markdown, -o file) | `_write_output()` links-only single-doc with `-o <file>` | File contains only reference lines |
 | Output unit (JSON) | `_write_output()` with links-only + json mode serialization | JSON payload is pure references array shape (`index/href/label`) without `markdown`, `status`, or other `_doc_to_dict()` fields |
+| Output unit (multi-doc, stdout) | `_write_output()` links-only multi-doc to stdout with per-URL headers | Combined output with `--- <url> ---` headers and per-doc reference lines |
+| Output unit (multi-doc, -o file) | `_write_output()` links-only multi-doc with `-o <file>` | Single combined file with per-URL headers and reference lines |
+| Output unit (multi-doc, -o dir) | `_write_output()` links-only multi-doc with `-o <dir>` | Per-URL `.md`/`.json` files in directory |
+| Output unit (--site) | `_write_output()` links-only with site crawl results (multi-doc) | Per-page output following multi-doc behavior |
+| Output unit (zero-ref, markdown) | `_write_output()` links-only with doc that has no references | `No references found for <url>` message |
+| Output unit (zero-ref, JSON) | `_write_output()` links-only + json with doc that has no references | Empty array `[]` |
 | Regression unit | Existing tests in `tests/test_cli.py` (dedup forwarding/auth propagation) | Existing tests continue to pass unchanged |
 
 ### Test Integrity Constraints
 
 - `tests/test_cli.py:24-39` parser default/storage-state tests should remain unchanged; new links-only parser tests are additive.
-- `tests/test_cli.py:41-170` async dedup/auth forwarding tests must remain valid; if `_run_crawl_async()` call signature to `_write_output()` changes (extra `links_only` argument), monkeypatched lambdas should be updated only to accept new kwargs, not to alter behavioral assertions.
+- `tests/test_cli.py:41-170` async dedup/auth forwarding tests must remain valid; if `_run_crawl_async()` call signature to `_write_output()` changes (extra `links_only` argument), monkeypatched lambdas should be updated only to accept new kwargs, not to alter behavioral assertions. Existing `argparse.Namespace` fixtures in async tests must be updated to include `links_only=False` (or use `getattr(args, 'links_only', False)` guard in implementation) to prevent `AttributeError`.
 - No existing tests should be deleted, skipped, or weakened to accommodate links-only behavior.
 
 ## Rollback Strategy
