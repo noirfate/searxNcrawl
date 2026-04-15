@@ -3,7 +3,7 @@ type: planning
 entity: implementation-plan
 plan: "links-only-output"
 phase: 1
-status: draft
+status: completed
 created: "2026-03-24"
 updated: "2026-03-24"
 ---

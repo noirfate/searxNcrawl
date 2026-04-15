@@ -2,7 +2,7 @@
 type: planning
 entity: plan
 plan: "links-only-output"
-status: active
+status: completed
 created: "2026-03-24"
 updated: "2026-03-24"
 ---
@@ -21,22 +21,22 @@ The crawl pipeline already extracts and stores page references in `CrawledDocume
 
 ### Functional
 
-- [ ] New `--links-only` CLI flag on the `crawl` command
-- [ ] When active, output contains only extracted references in markdown reference format: `[N] label - href`
-- [ ] Works with single-URL crawls
-- [ ] Works with multi-URL crawls (multiple URLs as positional args)
-- [ ] Works with `--site` site crawls
-- [ ] Multi-document output separates link lists per page with a URL header
-- [ ] `--links-only` combined with `-o` writes references to file instead of stdout
-- [ ] `--links-only` combined with `--json` outputs a pure references array: `[{index, href, label}, ...]`
-- [ ] `--links-only` combined with `--remove-links` raises an argparse error (mutually exclusive)
-- [ ] Pages with zero references print: `No references found for <url>`
+- [x] New `--links-only` CLI flag on the `crawl` command
+- [x] When active, output contains only extracted references in markdown reference format: `[N] label - href`
+- [x] Works with single-URL crawls
+- [x] Works with multi-URL crawls (multiple URLs as positional args)
+- [x] Works with `--site` site crawls
+- [x] Multi-document output separates link lists per page with a URL header
+- [x] `--links-only` combined with `-o` writes references to file instead of stdout
+- [x] `--links-only` combined with `--json` outputs a pure references array: `[{index, href, label}, ...]`
+- [x] `--links-only` combined with `--remove-links` raises an argparse error (mutually exclusive)
+- [x] Pages with zero references print: `No references found for <url>`
 
 ### Non-Functional
 
-- [ ] No changes to crawl orchestration or document pipeline — formatting only
-- [ ] Minimal code delta: leverage existing `CrawledDocument.references` data
-- [ ] Consistent with existing CLI flag patterns (argparse, `_write_output`)
+- [x] No changes to crawl orchestration or document pipeline — formatting only
+- [x] Minimal code delta: leverage existing `CrawledDocument.references` data
+- [x] Consistent with existing CLI flag patterns (argparse, `_write_output`)
 
 ## Scope
 
@@ -55,32 +55,32 @@ The crawl pipeline already extracts and stores page references in `CrawledDocume
 
 ## Definition of Done
 
-- [ ] `crawl <url> --links-only` outputs only references in `[N] label - href` format
-- [ ] Multi-URL and `--site` crawls with `--links-only` show per-page link lists with URL headers
-- [ ] `--links-only --json` outputs a pure references JSON array per document
-- [ ] `-o` file output works with `--links-only`
-- [ ] `--links-only` + `--remove-links` produces an argparse error
-- [ ] Pages with zero references show `No references found for <url>`
-- [ ] Multi-doc output follows existing CLI patterns: stdout=combined with URL headers, `-o file`=single file, `-o dir`=per-URL files
-- [ ] Existing tests still pass
-- [ ] New test(s) cover the `--links-only` output path including flag conflicts and edge cases
-- [ ] `crawl --help` documents the new flag
+- [x] `crawl <url> --links-only` outputs only references in `[N] label - href` format
+- [x] Multi-URL and `--site` crawls with `--links-only` show per-page link lists with URL headers
+- [x] `--links-only --json` outputs a pure references JSON array per document
+- [x] `-o` file output works with `--links-only`
+- [x] `--links-only` + `--remove-links` produces an argparse error
+- [x] Pages with zero references show `No references found for <url>`
+- [x] Multi-doc output follows existing CLI patterns: stdout=combined with URL headers, `-o file`=single file, `-o dir`=per-URL files
+- [x] Existing tests still pass
+- [x] New test(s) cover the `--links-only` output path including flag conflicts and edge cases
+- [x] `crawl --help` documents the new flag
 
 ## Testing Strategy
 
-- [ ] Unit test: `--links-only` output formatting for single document
-- [ ] Unit test: `--links-only` output formatting for multiple documents
-- [ ] Unit test: `--links-only` + `--remove-links` conflict raises error
-- [ ] Unit test: zero-reference page shows "No references found" message
-- [ ] Unit test: `--links-only --json` produces pure references array
-- [ ] Integration: run `crawl <url> --links-only` against a real URL and verify output format
-- [ ] Regression: existing test suite passes unchanged
+- [x] Unit test: `--links-only` output formatting for single document
+- [x] Unit test: `--links-only` output formatting for multiple documents
+- [x] Unit test: `--links-only` + `--remove-links` conflict raises error
+- [x] Unit test: zero-reference page shows "No references found" message
+- [x] Unit test: `--links-only --json` produces pure references array
+- [x] Integration: run `crawl <url> --links-only` against a real URL and verify output format
+- [x] Regression: existing test suite passes unchanged
 
 ## Phases
 
 | Phase | Title | Scope | Status |
 |-------|-------|-------|--------|
-| 1 | Add --links-only CLI flag and output formatting | [Detail](phases/phase-1.md) | pending |
+| 1 | Add --links-only CLI flag and output formatting | [Detail](phases/phase-1.md) | completed |
 
 ## Risks & Open Questions
 
@@ -96,3 +96,7 @@ The crawl pipeline already extracts and stores page references in `CrawledDocume
 
 - Plan created
 - Plan reviewed (delegate): 4 major findings resolved — flag conflict (argparse error), JSON output (pure references array), zero-reference behavior (message), multi-doc output (follows existing CLI patterns)
+- Implementation plan authored and verified for Phase 1
+- Implementation plan reviewed: 3 major findings resolved (test coverage expanded to 12 cases, smoke test added)
+- Phase 1 executed: 54/54 tests pass, smoke tests verified
+- Plan completed

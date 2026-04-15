@@ -3,7 +3,7 @@ type: planning
 entity: phase
 plan: "links-only-output"
 phase: 1
-status: pending
+status: completed
 created: "2026-03-24"
 updated: "2026-03-24"
 ---
@@ -39,28 +39,28 @@ Implement the `--links-only` flag in the CLI crawl command so that users can out
 
 ## Prerequisites
 
-- [ ] Feature branch `feature/links-only-output` created (done)
-- [ ] Understanding of `_write_output()` flow in `crawler/cli.py` (documented in docs/)
+- [x] Feature branch `feature/links-only-output` created (done)
+- [x] Understanding of `_write_output()` flow in `crawler/cli.py` (documented in docs/)
 
 ## Deliverables
 
-- [ ] `--links-only` flag added to CLI argument parser
-- [ ] Reference formatting function producing `[N] label - href` output
-- [ ] `_write_output()` updated to handle `--links-only` mode
-- [ ] Tests covering the new flag and output formatting
-- [ ] Help text updated
+- [x] `--links-only` flag added to CLI argument parser
+- [x] Reference formatting function producing `[N] label - href` output
+- [x] `_write_output()` updated to handle `--links-only` mode
+- [x] Tests covering the new flag and output formatting
+- [x] Help text updated
 
 ## Acceptance Criteria
 
-- [ ] `crawl https://example.com --links-only` prints only references, one per line, in `[N] label - href` format
-- [ ] `crawl https://a.com https://b.com --links-only` prints per-URL headers followed by references
-- [ ] `crawl https://example.com --site --links-only` prints per-page headers followed by references
-- [ ] `crawl https://example.com --links-only --json` outputs pure references JSON array
-- [ ] `crawl https://example.com --links-only -o out.txt` writes references to file
-- [ ] `crawl https://example.com --links-only --remove-links` produces argparse error
-- [ ] Page with no references shows `No references found for <url>`
-- [ ] All existing tests pass
-- [ ] `crawl --help` shows `--links-only` with a clear description
+- [x] `crawl https://example.com --links-only` prints only references, one per line, in `[N] label - href` format
+- [x] `crawl https://a.com https://b.com --links-only` prints per-URL headers followed by references
+- [x] `crawl https://example.com --site --links-only` prints per-page headers followed by references
+- [x] `crawl https://example.com --links-only --json` outputs pure references JSON array
+- [x] `crawl https://example.com --links-only -o out.txt` writes references to file
+- [x] `crawl https://example.com --links-only --remove-links` produces argparse error
+- [x] Page with no references shows `No references found for <url>`
+- [x] All existing tests pass
+- [x] `crawl --help` shows `--links-only` with a clear description
 
 ## Dependencies on Other Phases
 
