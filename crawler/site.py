@@ -14,7 +14,7 @@ import tldextract
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 from crawl4ai.deep_crawling.bfs_strategy import FilterChain
 from crawl4ai.deep_crawling.dfs_strategy import DFSDeepCrawlStrategy
-from crawl4ai.deep_crawling.filters import DomainFilter
+from crawl4ai.deep_crawling.filters import DomainFilter, URLFilter
 
 from .builder import build_document_from_result
 from .auth import AuthInput, resolve_auth
@@ -24,6 +24,49 @@ from .document import CrawledDocument
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_SITE_TIMEOUT = 120
+
+# Non-HTML resource extensions skipped during site crawl. The browser can't
+# render these as pages (they would otherwise become failed "pages"); per
+# project decision we skip rather than download them — the MCP tool returns
+# markdown and an agent can't consume binary files anyway.
+_SKIP_EXTENSIONS: Tuple[str, ...] = (
+    # archives
+    ".zip", ".tar", ".gz", ".tgz", ".rar", ".7z", ".bz2", ".xz",
+    # documents / office / binaries
+    ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".odt", ".rtf",
+    # images
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico", ".bmp", ".tif", ".tiff",
+    # audio / video
+    ".mp4", ".webm", ".mov", ".avi", ".mkv", ".flv",
+    ".mp3", ".wav", ".flac", ".ogg", ".m4a",
+    # fonts / packages / misc binaries
+    ".woff", ".woff2", ".ttf", ".otf", ".eot",
+    ".dmg", ".exe", ".msi", ".apk", ".iso", ".bin",
+)
+
+
+class _ResourceExtensionFilter(URLFilter):
+    """Reject URLs that point at non-HTML binary resources (by file extension).
+
+    Site crawling renders each page in a browser; asset links such as
+    ``.zip`` / ``.pdf`` / ``.png`` / ``.mp4`` can't be rendered and would show up
+    as failed "pages". We drop them at link-discovery time (skip, don't
+    download). Query strings/fragments are ignored via ``urlparse().path``.
+    """
+
+    def __init__(
+        self,
+        extensions: Tuple[str, ...] = _SKIP_EXTENSIONS,
+        name: Optional[str] = None,
+    ) -> None:
+        super().__init__(name=name)
+        self._extensions = tuple(e.lower() for e in extensions)
+
+    def apply(self, url: str) -> bool:
+        path = urlparse(url).path.lower()
+        keep = not path.endswith(self._extensions)
+        self._update_stats(keep)
+        return keep
 
 
 @dataclass
@@ -93,8 +136,9 @@ async def crawl_site_async(
     seed_host = _normalize_host(parsed.netloc or parsed.hostname)
     registrable = _registrable_domain(seed_host) if seed_host else None
 
-    # Build domain filters
-    filters = []
+    # Build filters: first drop non-HTML resource URLs (.zip/.pdf/.png/...) so
+    # they are never opened in a browser, then restrict to the seed domain.
+    filters: List[URLFilter] = [_ResourceExtensionFilter()]
     if seed_host:
         allowed_hosts = {seed_host}
         if include_subdomains and registrable and registrable != seed_host:

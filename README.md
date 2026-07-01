@@ -10,14 +10,20 @@ Pick your setup:
 
 ### Docker Compose (everything included)
 
-SearXNG, Playwright, and the MCP server — one command.
+SearXNG, Playwright, and the MCP server — one command, no `.env` needed.
 
 ```bash
-cp .env.example .env          # edit SEARXNG_URL if needed
 docker compose up --build
 ```
 
-➜ MCP server at `http://localhost:9555/mcp`
+➜ MCP server at `http://localhost:9555/mcp` (SearXNG runs internally; only the MCP port is published)
+
+Verify the running stack with the MCP client smoke test (the MCP port is
+published, so run it locally — needs `fastmcp`: `pip install fastmcp`):
+
+```bash
+python scripts/smoke_mcp_client.py
+```
 
 ### pip (standalone)
 
@@ -83,19 +89,34 @@ uv run playwright install chromium
 
 ### Docker Compose
 
-The Compose stack includes searxNcrawl + SearXNG + Playwright/Chromium.
+The Compose stack bundles searxNcrawl + SearXNG (JSON enabled, limiter off) +
+Playwright/Chromium and wires them together automatically. `.env` is optional.
 
 ```bash
-cp .env.example .env
-# Edit .env: set SEARXNG_URL if using external SearXNG, or keep default
 docker compose up --build
 ```
 
-| Variable    | Default                   | Description             |
-| ----------- | ------------------------- | ----------------------- |
-| `MCP_PORT`  | `9555`                    | MCP server HTTP port    |
+The `searxng` service is configured by [`searxng/settings.yml`](searxng/settings.yml)
+and the MCP server reaches it over the compose network at `http://searxng:8080`.
+SearXNG is **not** published on the host — only the MCP port is exposed. (To
+expose SearXNG for debugging, uncomment the `ports` block in `docker-compose.yml`.)
+
+| Variable   | Default | Description          |
+| ---------- | ------- | -------------------- |
+| `MCP_PORT` | `9555`  | MCP server HTTP port |
 
 The MCP server is available at `http://localhost:9555/mcp`.
+
+**Smoke test.** After the stack is up, verify it end-to-end with a real MCP
+client (`fastmcp.Client`, the same protocol Claude Code speaks). The MCP port is
+published to the host, so run the script locally (needs `fastmcp` — it ships
+with the project's deps, or `pip install fastmcp`):
+
+```bash
+python scripts/smoke_mcp_client.py                       # tools/list + crawl + search; exit code = result
+python scripts/smoke_mcp_client.py --url http://localhost:9555/mcp   # explicit endpoint
+python scripts/smoke_mcp_client.py --no-search           # skip search if no SearXNG
+```
 
 ### pip
 

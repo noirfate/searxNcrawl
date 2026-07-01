@@ -157,26 +157,39 @@ def build_markdown_generator() -> DefaultMarkdownGenerator:
 def build_markdown_run_config(
     overrides: Optional[RunConfigOverrides] = None,
 ) -> CrawlerRunConfig:
-    """RunConfig for single-page crawls, optimized for main content extraction."""
+    """RunConfig for single-page crawls — robust for general pages.
+
+    We deliberately do NOT hard-wait for a ``<main>`` element. Many sites (news,
+    landing pages, search results, example.com, older ``<div>``-based layouts)
+    have no ``<main>``; a ``wait_for`` on it would hang until ``page_timeout``
+    and return an empty document. Likewise we do not restrict extraction to
+    ``target_elements=MAIN_SELECTORS`` (which yields empty output when the page
+    has none of those containers).
+
+    Instead we:
+      * scroll through the page to trigger lazy / infinite-scroll content,
+      * wait a short fixed delay for scripts to settle, and
+      * let ``PruningContentFilter`` (density-based, works on any page) plus the
+        ``excluded_tags`` / ``excluded_selector`` do the denoising.
+    """
     generator = build_markdown_generator()
     config = CrawlerRunConfig(
         verbose=False,
         semaphore_count=1,
         page_timeout=30000,
-        delay_before_return_html=0.5,
+        delay_before_return_html=2.5,
         mean_delay=0.5,
         max_range=0.3,
-        target_elements=list(MAIN_SELECTORS),
-        excluded_tags=["nav", "footer", "header", "aside", "form", "sidebar"],
+        excluded_tags=["nav", "footer", "header", "aside", "form"],
         excluded_selector=", ".join(EXCLUDED_SELECTORS),
         markdown_generator=generator,
         cache_mode=CacheMode.BYPASS,
         scan_full_page=True,
-        js_code="""
-            window.location.reload();
-            setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 500);
-        """,
-        wait_for="js:() => document.querySelector('main') && document.querySelector('main').innerText.trim().length > 50",
+        js_code=[
+            "window.scrollTo(0, document.body.scrollHeight/2);",
+            "window.scrollTo(0, document.body.scrollHeight);",
+            "window.scrollTo(0, 0);",
+        ],
     )
     if overrides:
         _apply_overrides(config, overrides)
@@ -186,7 +199,16 @@ def build_markdown_run_config(
 def build_discovery_run_config(
     overrides: Optional[RunConfigOverrides] = None,
 ) -> CrawlerRunConfig:
-    """Configuration focused on link discovery for site crawling."""
+    """Configuration focused on link discovery for site crawling.
+
+    Like ``build_markdown_run_config``, this does NOT hard-restrict the page to
+    ``css_selector`` / ``target_elements=MAIN_SELECTORS``. That restriction
+    prunes the HTML down to main-content containers *before* link extraction, so
+    on pages without a ``<main>``/``.content`` element it would find neither
+    content nor the links to keep crawling (site nav links live outside those
+    containers). We rely on ``PruningContentFilter`` + excluded selectors for
+    denoising instead, keeping the whole body available for link discovery.
+    """
     generator = build_markdown_generator()
     config = CrawlerRunConfig(
         verbose=False,
@@ -199,8 +221,6 @@ def build_discovery_run_config(
         magic=True,
         cache_mode=CacheMode.BYPASS,
         markdown_generator=generator,
-        css_selector=", ".join(MAIN_SELECTORS),
-        target_elements=list(MAIN_SELECTORS),
         excluded_tags=["nav", "footer", "header", "aside", "form"],
         excluded_selector=", ".join(EXCLUDED_SELECTORS),
         ignore_body_visibility=False,

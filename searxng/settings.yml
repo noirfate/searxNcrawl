@@ -1,0 +1,39 @@
+# SearXNG configuration for the bundled docker-compose stack.
+#
+# `use_default_settings: true` merges this file on top of SearXNG's built-in
+# defaults, so every default engine stays enabled — we only override what the
+# searxNcrawl MCP `search` tool needs:
+#   * search.formats must include `json` (the tool requests format=json)
+#   * server.limiter must be false, otherwise the bot/rate limiter blocks the
+#     server-to-server JSON API calls made by the MCP server.
+#
+# For production, replace server.secret_key with your own random value, e.g.:
+#   python -c "import secrets; print(secrets.token_hex(32))"
+use_default_settings: true
+
+general:
+  instance_name: "searxNcrawl SearXNG"
+  debug: false
+
+server:
+  secret_key: "searxncrawl-local-dev-secret-change-me-0123456789abcdef"
+  limiter: false            # disable rate/bot limiter so the MCP server can query the JSON API
+  image_proxy: false
+  method: "GET"
+
+search:
+  # JSON MUST be enabled for the searxNcrawl `search` tool / CLI to work.
+  formats:
+    - html
+    - json
+  safe_search: 0
+  autocomplete: ""
+
+# Engine overrides. With use_default_settings: true these are merged by `name`
+# into the default engine list (all other defaults stay enabled).
+engines:
+  # Startpage only proxies Google results (which we already query directly via
+  # the `google` engine) and its scraper breaks often ("parsing error"), so
+  # disable it to remove the recurring error with no loss of result quality.
+  - name: startpage
+    disabled: true
