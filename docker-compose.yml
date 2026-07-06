@@ -10,7 +10,7 @@ services:
     image: searxng/searxng:latest
     container_name: searxng
     volumes:
-      - ./searxng:/etc/searxng:rw
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     # No host port published: only the MCP server needs SearXNG, and it reaches
     # it internally over the compose network at http://searxng:8080. To expose
     # it on the host for debugging, uncomment (pick any free host port):
